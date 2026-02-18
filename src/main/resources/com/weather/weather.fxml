@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.effect.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<Pane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="319.0" prefHeight="669.0" prefWidth="319.0" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.weather.WeatherController">
+   <children>
+      <!-- Arkaplan Resmi -->
+      <ImageView fitHeight="690.0" fitWidth="354.0" layoutY="-8.0" pickOnBounds="true" preserveRatio="true">
+         <image>
+            <Image url="@StarryMountain.png" />
+         </image>
+      </ImageView>
+
+      <!-- Ev Resmi -->
+      <ImageView fitHeight="349.0" fitWidth="317.0" layoutX="2.0" layoutY="224.0" pickOnBounds="true" preserveRatio="true">
+         <image>
+            <Image url="@House.png" />
+         </image>
+      </ImageView>
+
+      <!-- Alt Model Resmi -->
+      <ImageView fitHeight="268.0" fitWidth="332.0" layoutX="-1.0" layoutY="414.0" pickOnBounds="true" preserveRatio="true">
+         <image>
+            <Image url="@model.png" />
+         </image>
+      </ImageView>
+
+      <!-- Hava Durumu İkonu (Değişken) -->
+      <ImageView fx:id="weatherIcon" fitHeight="141.0" fitWidth="142.0" layoutX="28.0" layoutY="508.0" pickOnBounds="true" preserveRatio="true" />
+
+      <!-- Şehir Giriş Alanı -->
+      <TextField fx:id="cityInput" layoutX="20.0" layoutY="444.0" prefHeight="36.0" prefWidth="200.0" promptText="Şehir Giriniz" style="-fx-background-radius: 20; -fx-background-color: #1F1D47; -fx-text-fill: white; -fx-prompt-text-fill: #a0a0a0;">
+         <effect>
+            <InnerShadow blurType="GAUSSIAN" choke="0.31" height="67.89" radius="35.6425" width="76.68" />
+         </effect>
+         <font>
+            <Font size="16.0" />
+         </font>
+      </TextField>
+
+      <!-- Arama Butonu -->
+      <Button fx:id="searchButton" layoutX="242.0" layoutY="444.0" onAction="#handleSearch" prefHeight="36.0" prefWidth="50.0" style="-fx-background-radius: 20; -fx-background-color: #4A47A3; -fx-text-fill: white;" text="Ara">
+         <effect>
+            <DropShadow blurType="GAUSSIAN" color="#00000080" height="20.0" radius="10.0" width="20.0" offsetX="3.0" offsetY="3.0" />
+         </effect>
+      </Button>
+
+      <!-- Sıcaklık Gösterimi -->
+      <Text fx:id="temperatureText" fill="WHITE" layoutX="209.0" layoutY="597.0" strokeType="OUTSIDE" strokeWidth="0.0" text="--" textAlignment="CENTER" wrappingWidth="94.3837890625">
+         <font>
+            <Font name="Nirmala Text" size="63.0" />
+         </font>
+      </Text>
+
+      <!-- Şehir Adı -->
+      <Text fx:id="cityNameText" fill="WHITE" layoutX="3.0" layoutY="58.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Şehir" textAlignment="CENTER" wrappingWidth="314.0">
+         <font>
+            <Font name="Nirmala Text" size="48.0" />
+         </font>
+      </Text>
+
+      <!-- Hava Durumu Açıklaması -->
+      <Text fx:id="weatherDescriptionText" fill="WHITE" layoutX="3.0" layoutY="105.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Açıklama" textAlignment="CENTER" wrappingWidth="314.0">
+         <font>
+            <Font name="Nirmala Text" size="24.0" />
+         </font>
+      </Text>
+
+      <!-- Nem Bilgisi -->
+      <Text fx:id="humidityText" fill="WHITE" layoutX="20.0" layoutY="168.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Nem: --%" textAlignment="CENTER" wrappingWidth="279.00001525878906">
+         <font>
+            <Font name="Nirmala UI" size="14.0" />
+         </font>
+      </Text>
+
+      <!-- Rüzgar Bilgisi -->
+      <Text fx:id="windText" fill="WHITE" layoutX="2.0" layoutY="142.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Rüzgar: -- km/s" textAlignment="CENTER" wrappingWidth="314.0">
+         <font>
+            <Font name="Nirmala UI" size="14.0" />
+         </font>
+      </Text>
+
+      <!-- Hissedilen Sıcaklık -->
+      <Text fx:id="feelsLikeText" fill="WHITE" layoutX="2.0" layoutY="225.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Hissedilen: --°" textAlignment="CENTER" wrappingWidth="314.0">
+         <font>
+            <Font name="Nirmala UI" size="14.0" />
+         </font>
+      </Text>
+
+      <!-- Yüksek/Düşük Sıcaklık -->
+      <Text fx:id="tempMinMaxText" fill="WHITE" layoutX="2.0" layoutY="194.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Max: --° / Min: --°" textAlignment="CENTER" wrappingWidth="314.0">
+         <font>
+            <Font name="Nirmala UI" size="14.0" />
+         </font>
+      </Text>
+
+      <!-- Hata Mesajı -->
+      <Text fx:id="errorText" fill="RED" layoutY="383.0" strokeType="OUTSIDE" strokeWidth="0.0" text="" textAlignment="CENTER" visible="false" wrappingWidth="321.6000061035156">
+         <font>
+            <Font name="Nirmala Text" size="16.0" />
+         </font>
+      </Text>
+
+      <!-- Yükleniyor Mesajı -->
+      <Text fx:id="loadingText" fill="WHITE" layoutY="383.0" strokeType="OUTSIDE" strokeWidth="0.0" text="" textAlignment="CENTER" visible="false" wrappingWidth="321.60000610351557">
+         <font>
+            <Font name="Nirmala Text" size="16.0" />
+         </font>
+      </Text>
+      <ImageView fitHeight="128.0" fitWidth="182.0" layoutX="74.0" layoutY="115.0" pickOnBounds="true" preserveRatio="true">
+         <image>
+            <Image url="@Hours.png" />
+         </image>
+      </ImageView>
+   </children>
+</Pane>
