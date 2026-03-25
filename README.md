@@ -2,20 +2,20 @@
 
 JavaFX tabanlı masaüstü hava durumu uygulaması. OpenWeatherMap API kullanarak gerçek zamanlı hava durumu verilerini çeker ve görsel olarak sunar.
 
-## 📸 Ekran Görüntüsü
+## Ekran Görüntüsü
 
 ![Uygulama](src/image/weather-v2.png)
 
-## 🚀 Özellikler
+##  Özellikler
 
-- ✅ Gerçek zamanlı hava durumu verileri
-- ✅ Şehir bazlı arama
-- ✅ Sıcaklık, nem, rüzgar hızı gösterimi
-- ✅ Dinamik hava durumu ikonları
-- ✅ Modern ve şık arayüz
-- ✅ SOLID prensiplerine uygun mimari
+-  Gerçek zamanlı hava durumu verileri
+-  Şehir bazlı arama
+-  Sıcaklık, nem, rüzgar hızı gösterimi
+-  Dinamik hava durumu ikonları
+-  Modern ve şık arayüz
+-  SOLID prensiplerine uygun mimari
 
-## 🛠️ Teknolojiler
+##  Teknolojiler
 
 | Teknoloji | Versiyon |
 |-----------|----------|
@@ -24,7 +24,7 @@ JavaFX tabanlı masaüstü hava durumu uygulaması. OpenWeatherMap API kullanara
 | Maven | 3.x |
 | OpenWeatherMap API | 2.5 |
 
-## 📁 Proje Yapısı
+##  Proje Yapısı
 
 ```
 src/main/java/com/weather/
@@ -41,7 +41,7 @@ src/main/java/com/weather/
     └── WeatherIconMapper.java
 ```
 
-## 🏗️ SOLID Prensipleri
+##  SOLID Prensipleri
 
 | Prensip | Uygulama |
 |---------|----------|
@@ -51,7 +51,7 @@ src/main/java/com/weather/
 | **I** - Interface Segregation | Küçük, odaklı interface'ler |
 | **D** - Dependency Inversion | Controller interface'lere bağlı |
 
-## ⚙️ Kurulum
+##  Kurulum
 
 ### Gereksinimler
 - Java 17+
@@ -69,7 +69,7 @@ src/main/java/com/weather/
 mvn clean javafx:run
 ```
 
-## 🔑 API Anahtarı
+##  API Anahtarı
 
 Uygulama OpenWeatherMap API kullanır. API anahtarını değiştirmek için:
 
@@ -80,7 +80,7 @@ private static final String API_KEY = "YOUR_API_KEY";
 
 [OpenWeatherMap](https://openweathermap.org/api) adresinden ücretsiz API anahtarı alabilirsiniz.
 
-## 📝 Lisans
+##  Lisans
 
 Bu proje eğitim amaçlı geliştirilmiştir.
 
