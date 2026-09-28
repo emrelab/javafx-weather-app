@@ -142,9 +142,6 @@ src/test/java/com/weather/          # JUnit 5 testleri
 
 ## Yol haritası
 
-- [ ] Çevrimdışı önbellek: son başarılı yanıtı diske yaz, bağlantı yoksa onu göster
-- [ ] Saatlik ve 5 günlük tahmin
-- [ ] Kaydedilen şehirler
 - [ ] Arayüz testleri (TestFX)
 
 ## Lisans
