@@ -16,12 +16,12 @@ zamanlı veri çeker, katmanlı ve test edilebilir bir mimari üzerine kuruludur
 
 - Şehir bazlı arama, gerçek zamanlı hava durumu verisi
 - Sıcaklık, hissedilen sıcaklık, min/max, nem ve rüzgar hızı gösterimi
-- Hava durumuna göre dinamik ikonlar
+- Hava durumuna göre dinamik ikonlar (dilden bağımsız `icon` kodu ile eşlenir)
 - Ağ işlemleri arka planda; arayüz donmaz
 - Kullanıcıya ham exception metni veya hata kodu gösterilmez — her hata durumu
   Türkçe, okunabilir bir mesaja eşlenir (şehir bulunamadı, geçersiz API anahtarı,
   limit aşıldı, bağlantı yok, …)
-- 64 birim testi, 3 işletim sisteminde CI
+- 76 birim testi, 3 işletim sisteminde CI
 
 ## Mimari
 
@@ -33,6 +33,7 @@ flowchart TD
     FXML -->|"fx:controller"| Controller["WeatherController<br/><i>UI olayları ve ekran güncellemesi</i>"]
     Controller -->|IWeatherService| Service["OpenWeatherMapService<br/><i>HTTP taşıma + durum kodu eşlemesi</i>"]
     Controller -->|IWeatherIconMapper| IconMapper["WeatherIconMapper<br/><i>Hava durumu → ikon dosyası</i>"]
+    Controller -->|ApiKeyResolver| Config["ApiKeyResolver<br/><i>OWM_API_KEY → .env</i>"]
     Service -->|IWeatherResponseParser| Parser["WeatherResponseParser<br/><i>JSON → model</i>"]
     Service -.->|HttpClient| API(["OpenWeatherMap API"])
     Parser --> Model["WeatherData<br/><i>veri taşıma</i>"]
@@ -44,7 +45,7 @@ flowchart TD
 
 | Prensip | Uygulama |
 |---|---|
-| **S** — Single Responsibility | `OpenWeatherMapService` yalnızca HTTP taşıma ve durum kodu eşlemesi yapar; JSON çözümleme `WeatherResponseParser`'a, ikon seçimi `WeatherIconMapper`'a, ekran güncellemesi `WeatherController`'a aittir |
+| **S** — Single Responsibility | `OpenWeatherMapService` yalnızca HTTP taşıma ve durum kodu eşlemesi yapar; JSON çözümleme `WeatherResponseParser`'a, ikon seçimi `WeatherIconMapper`'a, anahtar bulma `ApiKeyResolver`'a, ekran güncellemesi `WeatherController`'a aittir |
 | **O** — Open/Closed | Yeni bir sağlayıcı (ör. farklı bir hava durumu API'si) `IWeatherService` implement edilerek eklenir; mevcut sınıflar değişmez |
 | **L** — Liskov Substitution | Testler herhangi bir `IWeatherService` / `IWeatherResponseParser` implementasyonuyla çalışır |
 | **I** — Interface Segregation | `IWeatherService`, `IWeatherIconMapper`, `IWeatherResponseParser` — her biri tek ve dar bir sözleşme |
@@ -81,7 +82,22 @@ Windows'ta: `mvnw.cmd clean javafx:run`
 ### API anahtarı
 
 Uygulama [OpenWeatherMap](https://openweathermap.org/api) API anahtarı gerektirir.
-Anahtar **kaynak kodda tutulmaz**, `OWM_API_KEY` ortam değişkeninden okunur.
+Anahtar **kaynak kodda tutulmaz**. İki kaynak desteklenir ve şu sırayla denenir:
+
+1. `OWM_API_KEY` ortam değişkeni
+2. Proje kökündeki `.env` dosyası (çalışma dizininden en fazla 3 üst dizine kadar aranır)
+
+**Önerilen yol — `.env`:** uygulamayı nasıl başlattığınızdan bağımsız çalışır
+(terminal, IntelliJ, Dock).
+
+```bash
+cp .env.example .env
+# .env dosyasını açıp değeri kendi anahtarınızla değiştirin
+```
+
+`.env` sürüm kontrolüne girmez (`.gitignore`'da).
+
+**Alternatif — ortam değişkeni:**
 
 ```bash
 # macOS / Linux
@@ -94,10 +110,12 @@ $env:OWM_API_KEY="buraya_anahtariniz"
 set OWM_API_KEY=buraya_anahtariniz
 ```
 
-Anahtar tanımlı değilse uygulama çökmez; arayüzde anlaşılır bir uyarı gösterilir.
+> **Neden iki yol var:** ortam değişkenleri yalnızca onları tanımlayan kabuk oturumunda
+> görünür. macOS'ta Dock/Finder'dan (veya IntelliJ'i Dock'tan) başlatılan bir uygulama
+> `~/.zshrc` okumaz; bu durumda anahtar sessizce kaybolur ve hata "anahtar tanımlı değil"
+> gibi görünür. `.env` bu tuzağı ortadan kaldırır.
 
-IntelliJ IDEA ile çalıştırırken: **Run → Edit Configurations → Environment variables**
-alanına `OWM_API_KEY=...` ekleyin.
+Anahtar hiçbir kaynakta yoksa uygulama çökmez; arayüzde anlaşılır bir uyarı gösterilir.
 
 ## Testler
 
@@ -105,13 +123,14 @@ alanına `OWM_API_KEY=...` ekleyin.
 ./mvnw test
 ```
 
-64 test, 3 sınıf:
+76 test, 4 sınıf:
 
 | Test sınıfı | Kapsam |
 |---|---|
 | `WeatherIconMapperTest` | Tüm OpenWeatherMap ikon kodları, `main` alanına geri düşme, harf duyarsızlık, bilinmeyen/eksik kod, `null` güvenliği |
 | `WeatherResponseParserTest` | Tam/eksik yanıtlar, boş ve bozuk gövde, zorunlu alan eksikleri, kök nedenin korunması |
 | `OpenWeatherMapServiceTest` | Gerçek HTTP üzerinden durum kodu eşlemesi (200/401/404/429/500), URL kodlaması, erişilemeyen sunucu, ağ isteği yapılmadan reddetme |
+| `ApiKeyResolverTest` | Ortam değişkeni önceliği, `.env` çözümlemesi (yorum, tırnak, boş değer), üst dizin aramasının sınırı, kaynak yokken `null` |
 
 Servis testleri gerçek bir soket üzerinden çalışır; `StubHttpServer` sahte API görevi
 görür. Böylece URL kurulumu, hata eşlemesi ve JSON çözümleme birlikte doğrulanır —
@@ -123,6 +142,8 @@ ne gerçek ağa ne de harici bir mock kütüphanesine ihtiyaç duyulur.
 src/main/java/com/weather/
 ├── Main.java                       # JavaFX giriş noktası
 ├── WeatherController.java          # UI olayları, ekran güncellemesi
+├── config/
+│   └── ApiKeyResolver.java         # Anahtar bulma: OWM_API_KEY → .env
 ├── model/
 │   └── WeatherData.java            # Veri modeli
 ├── service/
@@ -138,6 +159,8 @@ src/main/java/com/weather/
 src/main/java/module-info.java      # JPMS modül tanımı
 src/main/resources/com/weather/     # FXML ve ikon dosyaları
 src/test/java/com/weather/          # JUnit 5 testleri
+.env.example                        # Anahtar şablonu (sürüm kontrolünde)
+.env                                # Gerçek anahtar (sürüm kontrolü dışında)
 ```
 
 ## Yol haritası

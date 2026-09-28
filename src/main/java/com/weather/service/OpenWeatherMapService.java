@@ -58,7 +58,8 @@ public class OpenWeatherMapService implements IWeatherService {
         }
         if (apiKey == null || apiKey.isBlank()) {
             throw new WeatherServiceException(
-                    "API anahtarı tanımlı değil. OWM_API_KEY ortam değişkenini ayarlayın.");
+                    "API anahtarı tanımlı değil. OWM_API_KEY ortam değişkenini ayarlayın "
+                            + "veya proje köküne .env dosyası ekleyin (.env.example şablonuna bakın).");
         }
 
         HttpRequest request = HttpRequest.newBuilder(buildUri(cityName))

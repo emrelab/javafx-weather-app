@@ -1,5 +1,6 @@
 package com.weather;
 
+import com.weather.config.ApiKeyResolver;
 import com.weather.mapper.IWeatherIconMapper;
 import com.weather.mapper.WeatherIconMapper;
 import com.weather.model.WeatherData;
@@ -27,9 +28,10 @@ public class WeatherController {
 
     /**
      * API anahtarının okunduğu ortam değişkeni.
-     * Anahtar kaynak koda yazılmaz, README'de anlatıldığı gibi dışarıdan verilir.
+     * Ortam değişkeni yoksa proje kökündeki {@code .env} dosyası da kullanılır;
+     * ayrıntı için {@link ApiKeyResolver}.
      */
-    public static final String API_KEY_ENV = "OWM_API_KEY";
+    public static final String API_KEY_ENV = ApiKeyResolver.ENV_VAR;
 
     private static final String DEFAULT_CITY = "Istanbul";
     private static final Locale TURKISH = Locale.forLanguageTag("tr");
@@ -71,10 +73,12 @@ public class WeatherController {
 
     /**
      * Varsayılan constructor - bağımlılıkları oluşturur.
-     * API anahtarı {@value #API_KEY_ENV} ortam değişkeninden okunur.
+     * API anahtarı önce {@value #API_KEY_ENV} ortam değişkeninden, yoksa proje
+     * kökündeki {@code .env} dosyasından okunur. Böylece uygulamanın nasıl
+     * başlatıldığından (terminal, IntelliJ, Dock) bağımsız çalışır.
      */
     public WeatherController() {
-        this(new OpenWeatherMapService(System.getenv(API_KEY_ENV)), new WeatherIconMapper());
+        this(new OpenWeatherMapService(new ApiKeyResolver().resolve()), new WeatherIconMapper());
     }
 
     /**
