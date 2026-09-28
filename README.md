@@ -1,9 +1,9 @@
-# 🌤️ WeatherApp
+# 🌤️ JavaFX Weather App
 
 JavaFX ile yazılmış masaüstü hava durumu uygulaması. OpenWeatherMap API'sinden gerçek
 zamanlı veri çeker, katmanlı ve test edilebilir bir mimari üzerine kuruludur.
 
-[![CI](https://github.com/emrelab/weather-app/actions/workflows/ci.yml/badge.svg)](https://github.com/emrelab/weather-app/actions/workflows/ci.yml)
+[![CI](https://github.com/emrelab/javafx-weather-app/actions/workflows/ci.yml/badge.svg)](https://github.com/emrelab/javafx-weather-app/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Java](https://img.shields.io/badge/Java-17-orange.svg)](https://adoptium.net/)
 [![JavaFX](https://img.shields.io/badge/JavaFX-17.0.15-blue.svg)](https://openjfx.io/)
@@ -71,8 +71,8 @@ flowchart TD
 Projeyi klonlayıp çalıştırın — Maven kurmanıza gerek yok, wrapper geliyor:
 
 ```bash
-git clone https://github.com/emrelab/weather-app.git
-cd weather-app
+git clone https://github.com/emrelab/javafx-weather-app.git
+cd javafx-weather-app
 ./mvnw clean javafx:run
 ```
 
