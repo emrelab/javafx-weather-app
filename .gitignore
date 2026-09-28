@@ -1,6 +1,11 @@
 ﻿# Maven
 /target/
 
+# JavaFX SDK — JavaFX bağımlılıkları pom.xml üzerinden Maven ile çekilir.
+# Yerel SDK indirmeyin: ./mvnw clean javafx:run yeterlidir.
+/lib/
+*.jfx/
+
 # IntelliJ IDEA
 /.idea/
 *.iml
@@ -30,6 +35,10 @@
 
 # macOS
 .DS_Store
+
+# Gizli bilgiler — API anahtarını asla commit etmeyin
+.env
+*.local
 
 # Keep Maven wrapper jar
 !.mvn/wrapper/maven-wrapper.jar
