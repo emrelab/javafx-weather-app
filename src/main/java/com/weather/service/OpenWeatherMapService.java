@@ -1,83 +1,111 @@
 package com.weather.service;
 
 import com.weather.model.WeatherData;
-import org.json.JSONObject;
 
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.Scanner;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 
 /**
  * OpenWeatherMap API implementasyonu.
- * Single Responsibility: Sadece API çağrısı ve JSON parsing.
- * Open/Closed: IWeatherService interface'ini implement eder.
+ *
+ * <p>Single Responsibility: Sadece HTTP taşıma ve durum kodu → kullanıcı mesajı
+ * eşlemesi. JSON çözümlemesi {@link IWeatherResponseParser}'a devredilmiştir.
+ *
+ * <p>Open/Closed: Yeni bir sağlayıcı {@link IWeatherService} implement edilerek
+ * eklenir; bu sınıf değişmez.
+ *
+ * <p>Fırlatılan {@link WeatherServiceException} mesajları doğrudan kullanıcıya
+ * gösterilebilir Türkçe metinlerdir; ham exception metni sızdırılmaz.
  */
 public class OpenWeatherMapService implements IWeatherService {
 
+    private static final String DEFAULT_API_URL = "https://api.openweathermap.org/data/2.5/weather";
+    private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(5);
+    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
+
     private final String apiKey;
     private final String apiUrl;
+    private final IWeatherResponseParser parser;
+    private final HttpClient httpClient;
 
     public OpenWeatherMapService(String apiKey) {
-        this.apiKey = apiKey;
-        this.apiUrl = "https://api.openweathermap.org/data/2.5/weather";
+        this(apiKey, DEFAULT_API_URL, new WeatherResponseParser());
     }
 
     public OpenWeatherMapService(String apiKey, String apiUrl) {
+        this(apiKey, apiUrl, new WeatherResponseParser());
+    }
+
+    public OpenWeatherMapService(String apiKey, String apiUrl, IWeatherResponseParser parser) {
         this.apiKey = apiKey;
         this.apiUrl = apiUrl;
+        this.parser = parser;
+        this.httpClient = HttpClient.newBuilder()
+                .connectTimeout(CONNECT_TIMEOUT)
+                .build();
     }
 
     @Override
     public WeatherData getWeather(String cityName) throws WeatherServiceException {
+        if (cityName == null || cityName.isBlank()) {
+            throw new WeatherServiceException("Lütfen bir şehir adı girin.");
+        }
+        if (apiKey == null || apiKey.isBlank()) {
+            throw new WeatherServiceException(
+                    "API anahtarı tanımlı değil. OWM_API_KEY ortam değişkenini ayarlayın.");
+        }
+
+        HttpRequest request = HttpRequest.newBuilder(buildUri(cityName))
+                .timeout(REQUEST_TIMEOUT)
+                .GET()
+                .build();
+
         try {
-            String urlString = String.format("%s?q=%s&appid=%s&units=metric&lang=tr",
-                    apiUrl, cityName, apiKey);
+            HttpResponse<String> response = httpClient.send(
+                    request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
 
-            URL url = new URL(urlString);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("GET");
-            conn.connect();
-
-            int responseCode = conn.getResponseCode();
-
-            if (responseCode != 200) {
-                throw new WeatherServiceException("Şehir bulunamadı: " + cityName);
+            if (response.statusCode() != 200) {
+                throw new WeatherServiceException(toUserMessage(response.statusCode(), cityName));
             }
 
-            StringBuilder response = new StringBuilder();
-            Scanner scanner = new Scanner(url.openStream());
-            while (scanner.hasNext()) {
-                response.append(scanner.nextLine());
-            }
-            scanner.close();
-
-            return parseWeatherResponse(response.toString());
+            return parser.parse(response.body());
 
         } catch (WeatherServiceException e) {
             throw e;
-        } catch (Exception e) {
-            throw new WeatherServiceException("API hatası: " + e.getMessage(), e);
+        } catch (IOException e) {
+            throw new WeatherServiceException(
+                    "Hava durumu servisine ulaşılamadı. İnternet bağlantınızı kontrol edin.", e);
+        } catch (InterruptedException e) {
+            // Interrupt durumunu koru; yutmak thread pool'u bozar.
+            Thread.currentThread().interrupt();
+            throw new WeatherServiceException("İstek iptal edildi.", e);
         }
     }
 
-    private WeatherData parseWeatherResponse(String jsonResponse) {
-        JSONObject json = new JSONObject(jsonResponse);
+    private URI buildUri(String cityName) {
+        return URI.create(apiUrl
+                + "?q=" + encode(cityName)
+                + "&appid=" + encode(apiKey)
+                + "&units=metric&lang=tr");
+    }
 
-        JSONObject main = json.getJSONObject("main");
-        JSONObject weather = json.getJSONArray("weather").getJSONObject(0);
-        JSONObject wind = json.getJSONObject("wind");
+    private String encode(String value) {
+        return URLEncoder.encode(value, StandardCharsets.UTF_8);
+    }
 
-        WeatherData data = new WeatherData();
-        data.setCityName(json.getString("name"));
-        data.setTemperature(main.getDouble("temp"));
-        data.setFeelsLike(main.getDouble("feels_like"));
-        data.setTempMin(main.getDouble("temp_min"));
-        data.setTempMax(main.getDouble("temp_max"));
-        data.setHumidity(main.getInt("humidity"));
-        data.setWindSpeed(wind.getDouble("speed"));
-        data.setDescription(weather.getString("description"));
-        data.setMainWeather(weather.getString("main").toLowerCase());
-
-        return data;
+    private String toUserMessage(int statusCode, String cityName) {
+        return switch (statusCode) {
+            case 400 -> "Geçersiz istek. Şehir adını kontrol edin.";
+            case 401 -> "API anahtarı geçersiz. OWM_API_KEY değerini kontrol edin.";
+            case 404 -> "Şehir bulunamadı: " + cityName;
+            case 429 -> "API istek limiti aşıldı. Lütfen biraz bekleyip tekrar deneyin.";
+            default -> "Hava durumu servisi şu anda yanıt vermiyor (HTTP " + statusCode + ").";
+        };
     }
 }

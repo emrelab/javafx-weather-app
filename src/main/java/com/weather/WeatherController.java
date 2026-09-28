@@ -13,6 +13,11 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.text.Text;
 
+import java.io.InputStream;
+import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 /**
  * Hava durumu UI controller sınıfı.
  * Single Responsibility: Sadece UI güncellemeleri ve kullanıcı etkileşimleri.
@@ -20,12 +25,25 @@ import javafx.scene.text.Text;
  */
 public class WeatherController {
 
-    // API Key - güvenlik için environment variable'dan alınabilir
-    private static final String API_KEY = "YOUR_API_KEY";
+    /**
+     * API anahtarının okunduğu ortam değişkeni.
+     * Anahtar kaynak koda yazılmaz, README'de anlatıldığı gibi dışarıdan verilir.
+     */
+    public static final String API_KEY_ENV = "OWM_API_KEY";
+
+    private static final String DEFAULT_CITY = "Istanbul";
+    private static final Locale TURKISH = Locale.forLanguageTag("tr");
 
     // Bağımlılıklar - Interface'ler üzerinden (Dependency Inversion)
     private final IWeatherService weatherService;
     private final IWeatherIconMapper iconMapper;
+
+    /**
+     * Tek iş parçacıklı havuz: istekler sırayla işlenir, böylece geç dönen eski bir
+     * yanıt daha yeni bir aramanın sonucunu ezmez. Thread'ler daemon'dur, pencere
+     * kapatıldığında JVM kendiliğinden sonlanır.
+     */
+    private final ExecutorService executor;
 
     // FXML UI bileşenleri
     @FXML
@@ -53,10 +71,10 @@ public class WeatherController {
 
     /**
      * Varsayılan constructor - bağımlılıkları oluşturur.
+     * API anahtarı {@value #API_KEY_ENV} ortam değişkeninden okunur.
      */
     public WeatherController() {
-        this.weatherService = new OpenWeatherMapService(API_KEY);
-        this.iconMapper = new WeatherIconMapper();
+        this(new OpenWeatherMapService(System.getenv(API_KEY_ENV)), new WeatherIconMapper());
     }
 
     /**
@@ -67,13 +85,18 @@ public class WeatherController {
     public WeatherController(IWeatherService weatherService, IWeatherIconMapper iconMapper) {
         this.weatherService = weatherService;
         this.iconMapper = iconMapper;
+        this.executor = Executors.newSingleThreadExecutor(runnable -> {
+            Thread thread = new Thread(runnable, "weather-fetch");
+            thread.setDaemon(true);
+            return thread;
+        });
     }
 
     /**
      * FXML initialize metodu - uygulama başlatıldığında çağrılır.
      */
     public void initialize() {
-        fetchWeatherData("Istanbul");
+        fetchWeatherData(DEFAULT_CITY);
     }
 
     /**
@@ -88,79 +111,88 @@ public class WeatherController {
     }
 
     /**
-     * Hava durumu verilerini asenkron olarak çeker.
+     * Hava durumu verilerini arka planda çeker, sonucu FX thread'inde uygular.
      */
     private void fetchWeatherData(String cityName) {
-        showLoading(true);
-        hideError();
+        showLoading();
 
-        new Thread(() -> {
+        executor.submit(() -> {
             try {
                 WeatherData data = weatherService.getWeather(cityName);
-
                 Platform.runLater(() -> {
                     updateWeatherUI(data);
-                    showLoading(false);
+                    hideLoading();
                 });
 
             } catch (WeatherServiceException e) {
+                // Servis katmanı mesajları zaten kullanıcıya gösterilebilir Türkçe
+                // metinlerdir; ham exception metni veya hata kodu gösterilmez.
                 Platform.runLater(() -> {
                     showError(e.getMessage());
-                    showLoading(false);
+                    hideLoading();
                 });
             }
-        }).start();
+        });
     }
 
     /**
-     * UI bileşenlerini hava durumu verileriyle günceller.
+     * UI bileşenlerini hava durumu verileriyle günceller. FX thread'inde çağrılmalıdır.
      */
     private void updateWeatherUI(WeatherData data) {
         cityNameText.setText(data.getCityName());
         temperatureText.setText(String.format("%.0f°", data.getTemperature()));
         weatherDescriptionText.setText(capitalizeFirstLetter(data.getDescription()));
-        humidityText.setText(String.format("Nem: %%%.0f", (double) data.getHumidity()));
+        humidityText.setText(String.format("Nem: %%%d", data.getHumidity()));
         windText.setText(String.format("Rüzgar: %.1f km/s", data.getWindSpeed() * 3.6));
         feelsLikeText.setText(String.format("Hissedilen: %.0f°", data.getFeelsLike()));
-        tempMinMaxText.setText(String.format("Max: %.0f° / Min: %.0f°", data.getTempMax(), data.getTempMin()));
+        tempMinMaxText.setText(String.format("Max: %.0f° / Min: %.0f°",
+                data.getTempMax(), data.getTempMin()));
 
-        updateWeatherIcon(data.getMainWeather(), data.getDescription());
+        updateWeatherIcon(data);
     }
 
     /**
-     * Hava durumu ikonunu günceller.
+     * Hava durumu ikonunu günceller. Kaynak akışı try-with-resources ile kapatılır.
      */
-    private void updateWeatherIcon(String mainWeather, String description) {
-        String iconFile = iconMapper.getIconFileName(mainWeather, description);
+    private void updateWeatherIcon(WeatherData data) {
+        String iconFile = iconMapper.getIconFileName(data);
 
-        try {
-            Image image = new Image(getClass().getResourceAsStream(iconFile));
-            weatherIcon.setImage(image);
+        try (InputStream stream = getClass().getResourceAsStream(iconFile)) {
+            if (stream == null) {
+                System.err.println("İkon bulunamadı: " + iconFile);
+                return;
+            }
+            weatherIcon.setImage(new Image(stream));
         } catch (Exception e) {
-            System.err.println("İkon yüklenemedi: " + iconFile);
+            System.err.println("İkon yüklenemedi: " + iconFile + " (" + e.getMessage() + ")");
         }
     }
 
-    private void showLoading(boolean show) {
-        Platform.runLater(() -> {
-            loadingText.setVisible(show);
-            loadingText.setText(show ? "Yükleniyor..." : "");
-        });
+    /** FX thread'inde çağrılır. */
+    private void showLoading() {
+        loadingText.setText("Yükleniyor...");
+        loadingText.setVisible(true);
+        errorText.setVisible(false);
     }
 
+    /** FX thread'inde çağrılır. */
+    private void hideLoading() {
+        loadingText.setText("");
+        loadingText.setVisible(false);
+    }
+
+    /** FX thread'inde çağrılır. */
     private void showError(String message) {
         errorText.setText(message);
         errorText.setVisible(true);
-    }
-
-    private void hideError() {
-        Platform.runLater(() -> errorText.setVisible(false));
     }
 
     private String capitalizeFirstLetter(String text) {
         if (text == null || text.isEmpty()) {
             return text;
         }
-        return text.substring(0, 1).toUpperCase() + text.substring(1);
+        // Türkçe yerel ayarı açıkça verilir: aksi halde "i" -> "I"/"İ" dönüşümü
+        // platformun varsayılan yerel ayarına göre değişir.
+        return text.substring(0, 1).toUpperCase(TURKISH) + text.substring(1);
     }
 }

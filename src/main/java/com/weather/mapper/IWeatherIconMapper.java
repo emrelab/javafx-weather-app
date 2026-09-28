@@ -1,17 +1,16 @@
 package com.weather.mapper;
 
+import com.weather.model.WeatherData;
+
 /**
- * Hava durumu ikon eşleştirme interface'i.
+ * Hava durumu verisini yerel ikon dosyası adına eşleştirir.
  * Interface Segregation: Küçük, odaklı interface.
  */
 public interface IWeatherIconMapper {
 
     /**
-     * Hava durumu bilgisine göre ikon dosya adını döndürür.
-     * 
-     * @param mainWeather Ana hava durumu (clear, clouds, rain, vb.)
-     * @param description Detaylı açıklama
-     * @return İkon dosya adı
+     * @param data Hava durumu verisi
+     * @return Sınıf yoluna göre ikon dosya adı (örn. {@code "Icon=Sunny.png"})
      */
-    String getIconFileName(String mainWeather, String description);
+    String getIconFileName(WeatherData data);
 }

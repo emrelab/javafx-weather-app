@@ -5,6 +5,7 @@ package com.weather.model;
  * Single Responsibility: Sadece veri taşıma sorumluluğu.
  */
 public class WeatherData {
+
     private String cityName;
     private double temperature;
     private double feelsLike;
@@ -12,8 +13,12 @@ public class WeatherData {
     private double tempMax;
     private int humidity;
     private double windSpeed;
+    /** Kullanıcıya gösterilen, API diline göre yerelleştirilmiş açıklama. */
     private String description;
+    /** OpenWeatherMap ana kategori alanı (clear, clouds, rain, …). */
     private String mainWeather;
+    /** OpenWeatherMap ikon kodu (örn. 01d, 10n). İkon eşlemesi bunun üzerinden yapılır. */
+    private String iconCode;
 
     public WeatherData() {
     }
@@ -88,5 +93,13 @@ public class WeatherData {
 
     public void setMainWeather(String mainWeather) {
         this.mainWeather = mainWeather;
+    }
+
+    public String getIconCode() {
+        return iconCode;
+    }
+
+    public void setIconCode(String iconCode) {
+        this.iconCode = iconCode;
     }
 }
